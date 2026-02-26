@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "Profile Intelligence Engine API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for testing the FastAPI endpoints in the profile-intelligence-engine project."
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Evaluate Profile",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"github_url\": \"https://github.com/johndoe\",\n  \"website_url\": \"https://johndoe.com\",\n  \"twitter_url\": \"https://twitter.com/johndoe\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/evaluate",
+          "host": ["{{baseUrl}}"],
+          "path": ["evaluate"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Intelligence",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"linkedin_url\": \"https://www.linkedin.com/in/johndoe\",\n  \"name\": \"John Doe\",\n  \"qualifiers\": [\"software engineer\", \"open source\"],\n  \"max_sources\": 12\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/intelligence",
+          "host": ["{{baseUrl}}"],
+          "path": ["intelligence"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Resolve Profile",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"linkedin_url\": \"https://www.linkedin.com/in/johndoe\",\n  \"name\": \"John Doe\",\n  \"company\": \"Acme Corp\",\n  \"designation\": \"Senior Engineer\",\n  \"location\": \"San Francisco, CA\",\n  \"max_sources\": 12\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/resolve-profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["resolve-profile"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ]
+}
