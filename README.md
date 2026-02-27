@@ -97,6 +97,62 @@ Request body:
 }
 ```
 
+### `POST /resolve-profile`
+Agentic profile resolution endpoint for identity disambiguation and source confidence modeling.
+This endpoint is search-first: it uses Google Custom Search API (with fallback) instead of building a crawler.
+
+Request body:
+```json
+{
+  "name": "Amit Sharma",
+  "company": "Delhivery",
+  "designation": "VP Operations",
+  "location": "India",
+  "linkedin_url": "https://linkedin.com/in/...",
+  "max_sources": 12
+}
+```
+
+Resolution flow:
+`Input -> Query Builder -> Google CSE Search -> Candidate Extraction -> Disambiguation -> Source Confidence -> Summary`
+
+Google CSE setup:
+1. Create a Programmable Search Engine with web-wide search enabled.
+2. Add `GOOGLE_CSE_API_KEY` and `GOOGLE_CSE_CX` in `.env`.
+3. Endpoint will use fallback search only if Google CSE credentials are missing/unavailable.
+
+Response shape:
+```json
+{
+  "resolved_identity": {
+    "name": "Amit Sharma",
+    "company": "Delhivery",
+    "designation": "VP Operations",
+    "location": "India",
+    "confidence": 0.87
+  },
+  "ambiguity_flag": false,
+  "clarification_question": null,
+  "sources": [
+    {
+      "url": "https://www.linkedin.com/in/...",
+      "domain": "www.linkedin.com",
+      "type": "linkedin",
+      "confidence": 0.95,
+      "extracted_info": {
+        "name": "Amit Sharma",
+        "company": "Delhivery",
+        "designation": "VP Operations",
+        "location": "India",
+        "education": null,
+        "short_bio": "..."
+      }
+    }
+  ],
+  "aggregated_summary": "..."
+}
+```
+
 Resolved response shape:
 ```json
 {
