@@ -1,6 +1,51 @@
-from typing import Optional
+import enum
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, model_validator
+
+
+class EvaluationStatusEnum(str, enum.Enum):
+    QUEUED = "QUEUED"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    MANUAL_REVIEW = "MANUAL_REVIEW"
+
+
+class JobInput(BaseModel):
+    input_type: str = Field(
+        ..., pattern="^(linkedin_url|name_company|github_url|email)$"
+    )
+    input_value: str = Field(..., min_length=1)
+    priority: str = Field(default="normal", pattern="^(low|normal|high)$")
+
+
+class JobResponse(BaseModel):
+    evaluation_id: int
+    status: EvaluationStatusEnum
+    estimated_time_seconds: int = 45
+
+
+class SignalSchema(BaseModel):
+    execution_score: float = 0.0
+    technical_depth_score: float = 0.0
+    influence_score: float = 0.0
+    recognition_score: float = 0.0
+    raw_features: dict[str, Any] = Field(default_factory=dict)
+
+
+class EvaluationStatusResponse(BaseModel):
+    evaluation_id: int
+    status: str
+    stage: Optional[str] = None
+    final_score: Optional[float] = None
+    decision: Optional[str] = None
+    summary: Optional[str] = None
+    strengths: Optional[list[str]] = None
+    weaknesses: Optional[list[str]] = None
+    breakdown: Optional[SignalSchema] = None
+    progress: dict[str, str] = Field(default_factory=dict)
 
 
 class ProfileInput(BaseModel):
@@ -106,3 +151,35 @@ class ResolveProfileResponse(BaseModel):
     clarification_question: Optional[str] = None
     sources: list[ResolvedSource] = Field(default_factory=list)
     aggregated_summary: str
+
+
+class PersonData(BaseModel):
+    name: str = Field(..., description="The name of the evaluated person.")
+    company: Optional[str] = Field(
+        None, description="The current company of the evaluated person."
+    )
+
+
+class FinalSourceData(BaseModel):
+    url: str = Field(..., description="The URL of the source profile or article.")
+    type: str = Field(
+        ...,
+        description="The type of the source (e.g., 'linkedin', 'github', 'news_article').",
+    )
+    confidence: float = Field(
+        ...,
+        description="The confidence score (0.0 to 1.0) of this source belonging to the person.",
+    )
+    extracted_data: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Structured signals extracted from this source.",
+    )
+
+
+class ComprehensiveProfileResponse(BaseModel):
+    person: PersonData
+    sources: list[FinalSourceData] = Field(default_factory=list)
+    summary: str = Field(..., description="The final synthesized professional summary.")
+    total_sources: int = Field(
+        0, description="The total number of valid sources aggregated."
+    )
