@@ -1,7 +1,7 @@
 import enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class EvaluationStatusEnum(str, enum.Enum):
@@ -17,7 +17,10 @@ class JobInput(BaseModel):
     input_type: str = Field(
         ..., pattern="^(linkedin_url|name_company|github_url|email)$"
     )
-    input_value: str = Field(..., min_length=1)
+    input_value: Optional[str] = Field(None)
+    name: Optional[str] = Field(None, min_length=1)
+    company: Optional[str] = Field(None, min_length=1)
+    designation: Optional[str] = Field(None, min_length=1)
     priority: str = Field(default="normal", pattern="^(low|normal|high)$")
 
 
@@ -27,136 +30,37 @@ class JobResponse(BaseModel):
     estimated_time_seconds: int = 45
 
 
-class SignalSchema(BaseModel):
-    execution_score: float = 0.0
-    technical_depth_score: float = 0.0
-    influence_score: float = 0.0
-    recognition_score: float = 0.0
-    raw_features: dict[str, Any] = Field(default_factory=dict)
-
-
 class EvaluationStatusResponse(BaseModel):
     evaluation_id: int
     status: str
     stage: Optional[str] = None
-    final_score: Optional[float] = None
-    decision: Optional[str] = None
     summary: Optional[str] = None
-    strengths: Optional[list[str]] = None
-    weaknesses: Optional[list[str]] = None
-    breakdown: Optional[SignalSchema] = None
     progress: dict[str, str] = Field(default_factory=dict)
-
-
-class ProfileInput(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
-    github_url: Optional[str] = None
-    website_url: Optional[str] = None
-    twitter_url: Optional[str] = None
-
-
-class EvaluationResponse(BaseModel):
-    score: int
-    decision: str
-    reasoning: str
-    deterministic_score: int
-    llm_score_adjustment: int
-    signals: dict
-    scrape_failures: list[dict]
-
-
-class IntelligenceInput(BaseModel):
-    linkedin_url: Optional[str] = None
-    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    qualifiers: list[str] = Field(default_factory=list, max_length=8)
-    max_sources: int = Field(default=12, ge=3, le=25)
-
-    @model_validator(mode="after")
-    def validate_payload(self) -> "IntelligenceInput":
-        if not self.linkedin_url and not self.name:
-            raise ValueError("Either linkedin_url or name must be provided.")
-        return self
-
-
-class SourceRecord(BaseModel):
-    source: str
-    url: str
-    title: str
-    snippet: str
-    text: str
-    confidence: float
-
-
-class CandidateRecord(BaseModel):
-    label: str
-    confidence: float
-    profile_url: Optional[str] = None
-    company_hint: Optional[str] = None
-    evidence: list[str] = Field(default_factory=list)
-
-
-class IntelligenceResponse(BaseModel):
-    status: str
-    query: str
-    disambiguated: bool
-    clarification_questions: list[str]
-    candidates: list[CandidateRecord]
-    sources: list[SourceRecord]
-    summary: str
-
-
-class ResolveProfileInput(BaseModel):
-    linkedin_url: Optional[str] = None
-    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    company: Optional[str] = None
-    designation: Optional[str] = None
-    location: Optional[str] = None
-    max_sources: int = Field(default=12, ge=3, le=25)
-
-    @model_validator(mode="after")
-    def validate_payload(self) -> "ResolveProfileInput":
-        if not self.linkedin_url and not self.name:
-            raise ValueError("Either linkedin_url or name must be provided.")
-        return self
-
-
-class ExtractedInfo(BaseModel):
-    name: Optional[str] = None
-    company: Optional[str] = None
-    designation: Optional[str] = None
-    location: Optional[str] = None
-    education: Optional[str] = None
-    short_bio: Optional[str] = None
-
-
-class ResolvedIdentity(BaseModel):
-    name: Optional[str] = None
-    company: Optional[str] = None
-    designation: Optional[str] = None
-    location: Optional[str] = None
-    confidence: float = 0.0
-
-
-class ResolvedSource(BaseModel):
-    url: str
-    domain: str
-    type: str
-    confidence: float
-    extracted_info: ExtractedInfo
-
-
-class ResolveProfileResponse(BaseModel):
-    resolved_identity: ResolvedIdentity
-    ambiguity_flag: bool
-    clarification_question: Optional[str] = None
-    sources: list[ResolvedSource] = Field(default_factory=list)
-    aggregated_summary: str
 
 
 class PersonData(BaseModel):
     name: str = Field(..., description="The name of the evaluated person.")
     company: Optional[str] = Field(
         None, description="The current company of the evaluated person."
+    )
+
+
+class PersonaData(BaseModel):
+    name: str = Field(description="The name identified for this persona.")
+    company: Optional[str] = Field(
+        None, description="The current or main company associated with this persona."
+    )
+    role: Optional[str] = Field(
+        None, description="The role or designation of this persona."
+    )
+    location: Optional[str] = Field(
+        None, description="The location associated with this persona."
+    )
+    description: str = Field(
+        description="A brief description of this persona to help the user distinguish them."
+    )
+    associated_urls: list[str] = Field(
+        description="List of URLs that likely belong to this specific persona."
     )
 
 
@@ -182,4 +86,12 @@ class ComprehensiveProfileResponse(BaseModel):
     summary: str = Field(..., description="The final synthesized professional summary.")
     total_sources: int = Field(
         0, description="The total number of valid sources aggregated."
+    )
+    found_personas: list[PersonaData] = Field(
+        default_factory=list,
+        description="List of distinct personas discovered during research (used for disambiguation).",
+    )
+    follow_up_questions: list[str] = Field(
+        default_factory=list,
+        description="Questions generated when identity confidence is low to help disambiguate.",
     )

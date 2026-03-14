@@ -1,16 +1,22 @@
 from typing import Any, Dict
 
 from app.logger import logger
+from app.services.source_normalizer import normalize_source_type
 
 # Constants for platform trust
 PLATFORM_TRUST_WEIGHTS = {
     "linkedin_profile": 0.95,
+    "linkedin_page": 0.80,
     "github_profile": 0.90,
+    "github_repository": 0.75,
     "twitter_profile": 0.80,
     "x_profile": 0.80,
     "news_article": 0.75,
     "personal_blog": 0.50,
+    "personal_site": 0.55,
     "medium_post": 0.65,
+    "youtube_channel": 0.75,
+    "youtube_video": 0.65,
     "crunchbase": 0.90,
     "unknown": 0.30,
 }
@@ -36,8 +42,11 @@ class ConfidenceService:
         score = (Identity Match * 0.5) + (Platform Trust * 0.3) + (Extraction Consistency * 0.2)
         """
         # 1. Platform Trust Score
+        normalized_type = normalize_source_type(
+            source_type, extraction_result.get("url", "")
+        )
         platform_score = PLATFORM_TRUST_WEIGHTS.get(
-            source_type.lower(), PLATFORM_TRUST_WEIGHTS["unknown"]
+            normalized_type.lower(), PLATFORM_TRUST_WEIGHTS["unknown"]
         )
 
         # 2. Extraction Consistency Score
@@ -65,7 +74,7 @@ class ConfidenceService:
 
         # Log for debugging
         logger.info(
-            f"Confidence calculated for {source_type}: {final_score:.2f} "
+            f"Confidence calculated for {normalized_type}: {final_score:.2f} "
             f"(Identity: {identity_match_score}, Platform: {platform_score}, Consistency: {consistency_score:.2f})"
         )
 

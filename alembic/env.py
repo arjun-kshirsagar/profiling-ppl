@@ -11,15 +11,7 @@ sys.path.append(os.getcwd())
 
 from app.config import get_settings
 from app.db import Base
-from app.models import (
-    Evaluation,
-    Person,
-    ProfileEvaluation,
-    ScoringConfig,
-    ScraperExecutionLog,
-    ScraperScript,
-    Signal,
-)
+from app.models import Evaluation, EvaluationStage, EvaluationStatus, Person
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

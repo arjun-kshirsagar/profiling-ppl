@@ -23,7 +23,7 @@ class QueryAgent(BaseAgent):
     Agent responsible for generating targeted search queries to discover a candidate's digital footprint.
     """
 
-    def __init__(self, provider: str = "groq", max_retries: int = 2):
+    def __init__(self, provider: str = "gemini", max_retries: int = 2):
         super().__init__(provider=provider, max_retries=max_retries, timeout_seconds=15)
 
     async def generate_search_queries(
@@ -44,8 +44,9 @@ class QueryAgent(BaseAgent):
             "\n\nRules:"
             "\n1. Return exactly 5 to 10 distinct queries."
             "\n2. Use combinations of their name, company, and role."
-            "\n3. Include platform-specific keywords (e.g., 'linkedin', 'github', "
-            "'youtube', 'interview', 'speaker')."
+            "\n3. MUST INCLUDE platform-specific queries using 'site:' operator "
+            "(e.g., 'site:github.com \"First Last\"', 'site:youtube.com \"First Last\"', "
+            "'site:medium.com \"First Last\"', 'site:twitter.com \"First Last\"')."
             "\n4. If the company or designation is missing, focus heavily on their "
             "name and broad tech keywords."
         )
@@ -71,11 +72,11 @@ class QueryAgent(BaseAgent):
             logger.error(f"QueryAgent failed for {name}: {e}")
             # Fallback queries
             fallback = [
-                f"{name} linkedin",
-                f"{name} github",
-                f"{name} {company or ''} interview",
-                f"{name} {company or ''} tech blog",
-                f"{name} {designation or ''} speaker",
+                f'site:linkedin.com/in "{name}"',
+                f'site:github.com "{name}"',
+                f'site:youtube.com "{name}" {company or ""}'.strip(),
+                f'site:medium.com "{name}" {designation or ""}'.strip(),
+                f'{name} {company or ""} {designation or ""} "interview"'.strip(),
             ]
             # Clean up fallbacks (remove extra spaces if company/designation missing)
             fallback = [" ".join(q.split()) for q in fallback]

@@ -22,7 +22,7 @@ class SummaryAgent(BaseAgent):
     into a cohesive profile summary.
     """
 
-    def __init__(self, provider: str = "groq", max_retries: int = 2):
+    def __init__(self, provider: str = "gemini", max_retries: int = 2):
         super().__init__(provider=provider, max_retries=max_retries, timeout_seconds=20)
 
     async def generate_summary(
@@ -30,6 +30,7 @@ class SummaryAgent(BaseAgent):
         name: str,
         sources: List[Dict[str, Any]],
         structured_data: List[Dict[str, Any]],
+        is_ambiguous: bool = False,
     ) -> SummaryResult:
         """
         Synthesizes a cohesive professional summary from collected sources and data.
@@ -44,6 +45,13 @@ class SummaryAgent(BaseAgent):
             "3. Do not invent information. If something is not in the input data, do not mention it.\n"
             "4. Keep it concise but comprehensive, typically 3-5 sentences."
         )
+
+        if is_ambiguous:
+            system_prompt += (
+                "\n\nCRITICAL: The search results for this name are AMBIGUOUS and likely represent multiple people. "
+                "YOUR SUMMARY MUST CLEARLY DISTINGUISH BETWEEN THESE IDENTITIES. "
+                "Do NOT merge them. Example: 'There are two people with this name: an Architect vs a Sales Manager.'"
+            )
 
         user_prompt = (
             f"Candidate Name: {name}\n\n"

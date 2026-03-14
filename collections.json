@@ -1,79 +1,185 @@
 {
   "info": {
-    "name": "Profile Intelligence Engine API",
+    "name": "Profile Intelligence Engine APIs",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Collection for testing the FastAPI endpoints in the profile-intelligence-engine project."
   },
   "item": [
     {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/health",
-          "host": ["{{baseUrl}}"],
-          "path": ["health"]
+      "name": "General",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Evaluate Profile",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"John Doe\",\n  \"github_url\": \"https://github.com/johndoe\",\n  \"website_url\": \"https://johndoe.com\",\n  \"twitter_url\": \"https://twitter.com/johndoe\"\n}"
+      "name": "Sync Endpoints (MVP)",
+      "item": [
+        {
+          "name": "Evaluate Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"github_url\": \"https://github.com/janedoe\",\n  \"website_url\": \"https://janedoe.dev\",\n  \"twitter_url\": \"https://x.com/janedoe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/evaluate",
+              "host": ["{{baseUrl}}"],
+              "path": ["evaluate"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{baseUrl}}/evaluate",
-          "host": ["{{baseUrl}}"],
-          "path": ["evaluate"]
+        {
+          "name": "Intelligence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amit Sharma\",\n  \"qualifiers\": [\"Delhivery\"],\n  \"max_sources\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/intelligence",
+              "host": ["{{baseUrl}}"],
+              "path": ["intelligence"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amit Sharma\",\n  \"company\": \"Delhivery\",\n  \"designation\": \"VP Operations\",\n  \"location\": \"India\",\n  \"max_sources\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/resolve-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["resolve-profile"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Intelligence",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"linkedin_url\": \"https://www.linkedin.com/in/johndoe\",\n  \"name\": \"John Doe\",\n  \"qualifiers\": [\"software engineer\", \"open source\"],\n  \"max_sources\": 12\n}"
+      "name": "Async Pipeline (v1)",
+      "item": [
+        {
+          "name": "Create Evaluation Job (LinkedIn)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"input_type\": \"linkedin_url\",\n  \"input_value\": \"https://linkedin.com/in/amitsharmadelhivery\",\n  \"priority\": \"normal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "evaluations"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{baseUrl}}/intelligence",
-          "host": ["{{baseUrl}}"],
-          "path": ["intelligence"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Resolve Profile",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"linkedin_url\": \"https://www.linkedin.com/in/johndoe\",\n  \"name\": \"John Doe\",\n  \"company\": \"Acme Corp\",\n  \"designation\": \"Senior Engineer\",\n  \"location\": \"San Francisco, CA\",\n  \"max_sources\": 12\n}"
+        {
+          "name": "Create Evaluation Job (Name & Company)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"input_type\": \"name_company\",\n  \"name\": \"Amit Sharma\",\n  \"company\": \"Delhivery\",\n  \"designation\": \"VP Operations\",\n  \"priority\": \"normal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/evaluations",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "evaluations"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{baseUrl}}/resolve-profile",
-          "host": ["{{baseUrl}}"],
-          "path": ["resolve-profile"]
+        {
+          "name": "Get Evaluation Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/evaluations/:evaluation_id",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "evaluations", ":evaluation_id"],
+              "variable": [
+                {
+                  "key": "evaluation_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Comprehensive Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/profiles/:evaluation_id",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "profiles", ":evaluation_id"],
+              "variable": [
+                {
+                  "key": "evaluation_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     }
   ],
   "variable": [

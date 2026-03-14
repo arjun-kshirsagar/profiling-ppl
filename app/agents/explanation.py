@@ -26,7 +26,7 @@ class ExplanationAgent(BaseAgent):
     Agent responsible for translating deterministic scores and signals into a human-readable explanation.
     """
 
-    def __init__(self, provider: str = "groq", max_retries: int = 2):
+    def __init__(self, provider: str = "gemini", max_retries: int = 2):
         super().__init__(provider=provider, max_retries=max_retries, timeout_seconds=20)
 
     async def generate_explanation(

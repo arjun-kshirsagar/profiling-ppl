@@ -18,7 +18,8 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4.1-mini"
     groq_api_key: Optional[str] = None
     groq_model: str = "llama-3.3-70b-versatile"
-    gemini_api_key: Optional[str] = None
+    vertex_project: Optional[str] = None
+    vertex_location: str = "us-central1"
     gemini_model: str = "gemini-2.5-flash"
     script_generation_max_attempts: int = 4
     llm_reflection_enabled: bool = False
