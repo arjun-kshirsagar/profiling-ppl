@@ -54,23 +54,23 @@ def run_evaluation_pipeline(
         asyncio.set_event_loop(loop)
 
         try:
-            _update_stage(db, evaluation, EvaluationStage.IDENTITY_RESOLUTION)
-
             # Run the full agentic pipeline
             logger.info(
                 f"Triggering AgenticProfileResearchAgent for evaluation {evaluation_id} with goal: {goal}"
             )
             result = loop.run_until_complete(
-                research_agent.run_loop(goal=goal, context=context)
+                research_agent.run_loop(
+                    goal=goal,
+                    context=context,
+                    stage_callback=lambda stage: _update_stage(db, evaluation, stage),
+                )
             )
 
             # Store results back to database
             evaluation.summary = result.get("summary", "")
-            evaluation.sources = result.get(
-                "memory", []
-            )  # We attach the agent's memory/traces instead of strict sources for now
-            evaluation.found_personas = []
-            evaluation.follow_up_questions = []
+            evaluation.sources = result.get("sources", [])
+            evaluation.found_personas = result.get("found_personas", [])
+            evaluation.follow_up_questions = result.get("follow_up_questions", [])
 
             db.commit()
         except Exception as e:
