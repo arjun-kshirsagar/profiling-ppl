@@ -35,38 +35,45 @@ async def health() -> dict[str, str]:
 async def create_evaluation_job(
     payload: JobInput, db: Session = Depends(get_db)
 ) -> JobResponse:
-    logger.info(f"POST /v1/evaluations - received request: {payload.input_type}")
-
     # 1. Create/Find Person record
     person = None
-    if payload.input_type == "linkedin_url" and payload.input_value:
-        person = (
-            db.query(Person).filter(Person.linkedin_url == payload.input_value).first()
-        )
-    elif payload.input_type == "github_url" and payload.input_value:
-        person = (
-            db.query(Person).filter(Person.github_url == payload.input_value).first()
-        )
-    elif payload.input_type == "name_company" and payload.name:
-        # Search by name and company
-        query = db.query(Person).filter(Person.full_name == payload.name)
-        if payload.company:
-            query = query.filter(Person.current_company == payload.company)
-        if payload.designation:
-            query = query.filter(Person.current_role == payload.designation)
+    input_data = payload.input_data or {}
+    linkedin_url = input_data.get("linkedin_url")
+    github_url = input_data.get("github_url")
+    name = input_data.get("name")
+    company = input_data.get("company")
+    designation = input_data.get("designation")
+
+    # Construct the goal dynamically in the backend
+    goal = "Perform comprehensive professional research based on provided context."
+    if linkedin_url:
+        goal = f"Identify and summarize the professional background for the LinkedIn profile: {linkedin_url}."
+    elif name and company:
+        goal = f"Research the professional experience and achievements of {name} at {company}."
+    elif name:
+        goal = f"Discover and synthesize a professional profile for {name}."
+
+    logger.info(f"POST /v1/evaluations - Generated Goal: {goal}")
+
+    if linkedin_url:
+        person = db.query(Person).filter(Person.linkedin_url == linkedin_url).first()
+    elif github_url:
+        person = db.query(Person).filter(Person.github_url == github_url).first()
+    elif name:
+        query = db.query(Person).filter(Person.full_name == name)
+        if company:
+            query = query.filter(Person.current_company == company)
+        if designation:
+            query = query.filter(Person.current_role == designation)
         person = query.first()
 
     if not person:
         person = Person(
-            full_name=payload.name,
-            current_company=payload.company,
-            current_role=payload.designation,
-            linkedin_url=(
-                payload.input_value if payload.input_type == "linkedin_url" else None
-            ),
-            github_url=(
-                payload.input_value if payload.input_type == "github_url" else None
-            ),
+            full_name=name,
+            current_company=company,
+            current_role=designation,
+            linkedin_url=linkedin_url,
+            github_url=github_url,
         )
         db.add(person)
         db.flush()  # To get the ID for evaluation
@@ -82,7 +89,7 @@ async def create_evaluation_job(
     db.refresh(evaluation)
 
     # 3. Push background job
-    run_evaluation_pipeline.delay(evaluation.id)
+    run_evaluation_pipeline.delay(evaluation.id, goal, input_data)
 
     return JobResponse(
         evaluation_id=evaluation.id,
@@ -137,17 +144,26 @@ async def get_comprehensive_profile(evaluation_id: int, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="Evaluation not found")
 
     person = evaluation.person
-    sources_data = evaluation.sources or []
+    sources_raw = evaluation.sources or []
     found_personas = evaluation.found_personas or []
+
+    # Check if 'sources' contains agent memory traces (identifiable by 'role' field)
+    sources = []
+    agent_memory = []
+    if sources_raw and isinstance(sources_raw[0], dict) and "role" in sources_raw[0]:
+        agent_memory = sources_raw
+    else:
+        sources = sources_raw
 
     return ComprehensiveProfileResponse(
         person={
             "name": person.full_name or "Unknown",
             "company": person.current_company,
         },
-        sources=sources_data,
+        sources=sources,
+        agent_memory=agent_memory,
         summary=evaluation.summary or "",
-        total_sources=len(sources_data),
+        total_sources=len(sources),
         found_personas=found_personas,
         follow_up_questions=evaluation.follow_up_questions or [],
     )

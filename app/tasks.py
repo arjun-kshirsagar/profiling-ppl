@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.agents.profile_research_agent import ProfileResearchAgent
+from app.agents.core_agent import AgenticProfileResearchAgent
 from app.celery_app import celery_app
 from app.db import SessionLocal
 from app.logger import logger
@@ -16,7 +16,12 @@ from app.models import Evaluation, EvaluationStage, EvaluationStatus
     max_retries=3,
     default_retry_delay=60,
 )
-def run_evaluation_pipeline(self, evaluation_id: int):
+def run_evaluation_pipeline(
+    self,
+    evaluation_id: int,
+    goal: str = "Perform professional research.",
+    input_data: dict = None,
+):
     """
     Background task to run the full evaluation pipeline.
     """
@@ -32,13 +37,17 @@ def run_evaluation_pipeline(self, evaluation_id: int):
         evaluation.started_at = datetime.utcnow()
         db.commit()
 
-        # Use ProfileResearchAgent to perform the end-to-end research
-        research_agent = ProfileResearchAgent()
+        # Use AgenticProfileResearchAgent to perform the end-to-end research
+        research_agent = AgenticProfileResearchAgent()
 
-        # Determine inputs
-        name = person.full_name or "Unknown Candidate"
-        company = person.current_company
-        designation = person.current_role
+        input_d = input_data or {}
+        context = {
+            "name": person.full_name or "Unknown Candidate",
+            "company": person.current_company,
+            "designation": person.current_role,
+            "linkedin_url": person.linkedin_url,
+            **input_d,
+        }
 
         # We need an event loop for the async agents
         loop = asyncio.new_event_loop()
@@ -49,43 +58,19 @@ def run_evaluation_pipeline(self, evaluation_id: int):
 
             # Run the full agentic pipeline
             logger.info(
-                f"Triggering ProfileResearchAgent for evaluation {evaluation_id}"
+                f"Triggering AgenticProfileResearchAgent for evaluation {evaluation_id} with goal: {goal}"
             )
             result = loop.run_until_complete(
-                research_agent.research_profile(
-                    name=name,
-                    company=company,
-                    designation=designation,
-                    linkedin_url=person.linkedin_url,
-                    max_search_results=10,
-                )
+                research_agent.run_loop(goal=goal, context=context)
             )
 
             # Store results back to database
-            evaluation.summary = result.summary
-            # We can store the structured sources in the evaluation or person metadata
-            # For now, let's assume we store them in a JSON field if available,
-            # but looking at models.py earlier, we might need to add it or use an existing one.
-            # Evaluation has summary, strengths, weaknesses.
-
-            # Update person info if found
-            if not person.full_name and result.person.name:
-                person.full_name = result.person.name
-
-            # Store discovered URLs back to the person if not already present
-            if result.sources:
-                for source in result.sources:
-                    if not person.linkedin_url and source.type == "linkedin_profile":
-                        person.linkedin_url = source.url
-                    if not person.github_url and source.type == "github_profile":
-                        person.github_url = source.url
-
-            # The result.sources contains FinalSourceData objects.
-            # We might need to store them in a related table or JSON.
-            # Assuming Evaluation has a 'sources' JSONB column or similar as implied by main.py line 273.
-            evaluation.sources = [s.model_dump() for s in result.sources]
-            evaluation.found_personas = [p.model_dump() for p in result.found_personas]
-            evaluation.follow_up_questions = result.follow_up_questions
+            evaluation.summary = result.get("summary", "")
+            evaluation.sources = result.get(
+                "memory", []
+            )  # We attach the agent's memory/traces instead of strict sources for now
+            evaluation.found_personas = []
+            evaluation.follow_up_questions = []
 
             db.commit()
         except Exception as e:

@@ -36,12 +36,16 @@ graph TD
     Broker -->|Execute| Worker[Celery Worker]
 
     subgraph "Agentic Orchestrator (ProfileResearchAgent)"
-        Worker --> QA[QueryAgent]
-        QA -->|Generate Queries| SS[SearchService]
-        SS -->|Fetch Snippets| IA[IdentityAgent]
-        IA -->|Verify Matches| CL[ConfidenceService]
-        CL -->|Iterate if Weak| QA
-        IA -->|Synthesize| SA[SummaryAgent]
+        Worker --> PSRA[ProfileSeedResolver]
+        PSRA --> QA[QueryAgent]
+        QA -->|Search| SS[SearchService]
+        SS -->|Results| IA[IdentityAgent]
+        IA -->|Ambiguous?| ADA[ActiveDisambiguation]
+        ADA -->|Conclusive Match| SEA[SignalExtractionAgent]
+        IA -->|Valid Sources| SEA
+        SEA -->|Signals| CS[ConfidenceService]
+        CS -->|Scores| SA[SummaryAgent]
+        CS -->|Unresolved?| FUA[FollowUpAgent]
         SA -->|Final Report| Result
     end
 
@@ -52,17 +56,30 @@ graph TD
 
 ## 🤖 The Agent System
 
+### 🧬 ProfileSeedResolverAgent
+The **"Inceptor."** If a LinkedIn URL is provided, it resolves the initial profile to extract "seed" details like the correct name, company, and role, which helps anchor the rest of the search.
+
 ### 🔍 QueryAgent
-Optimizes search queries based on the input person's name, company, and role. It handles **Iterative Refinement**: if the first batch of results is poor, it generates fallback boolean search strategies to find "hidden" profiles.
+The **"Strategist."** It generates and refines platform-specific search queries (e.g., using `site:github.com` or `site:linkedin.com`) to find the target's online presence. It handles **Iterative Refinement** on search failures.
 
 ### 🛡️ IdentityAgent
-The "Gatekeeper." It analyzes search resultsContext to determine if they actually belong to the target person. It assigns match confidence based on name overlap, professional context, and platform trust.
+The **"Gatekeeper."** It categorizes search results into distinct personas and assigns `identity_match_score` based on how well each result aligns with the target's known name, company, and role.
+
+### ⚖️ ActiveDisambiguationAgent
+The **"Tie-breaker."** When multiple plausible personas are found (e.g., two "John Does" at the same company), it performs deeper reasoning on available data to find the conclusive match.
+
+### ⛏️ SignalExtractionAgent
+The **"Miner."** It extracts granular professional signals like current role, seniority, core skills, and past companies directly from search snippets without heavy scraping.
+
+### 📈 ConfidenceService
+The **"Validator."** It computes a final trust score for every source by weighting identity match, source type, and data extraction quality.
 
 ### 📝 SummaryAgent
-The "Editor." It merges verified search snippets and metadata into a cohesive 3-5 sentence professional summary, highlighting current roles, past achievements, and online footprint.
+The **"Editor."** It synthesizes all verified signals and high-confidence sources into a cohesive 3-5 sentence professional summary, highlighting major achievements and online footprint.
 
-### ⚖️ ConfidenceService
-Uses weighted heuristics to calculate a final trust score for every source identified, ensuring only reliable information makes it into the summary.
+### 🤝 FollowUpAgent
+The **"Concierge."** If the system cannot confidently resolve an identity due to ambiguity, it generates clarifying questions to help the user provide missing context.
+
 
 ---
 

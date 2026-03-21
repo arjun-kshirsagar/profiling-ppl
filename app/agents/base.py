@@ -31,31 +31,21 @@ class BaseAgent:
         self.timeout_seconds = timeout_seconds
 
         # Select appropriate API key based on provider
-        if provider == "gemini" and settings.vertex_project:
-            self.llm = get_llm(
-                "gemini",
-                project=settings.vertex_project,
-                location=settings.vertex_location,
-                model=settings.gemini_model,
-            )
+        if provider == "gemini" and settings.gemini_api_key:
+            self.llm = get_llm("gemini", settings.gemini_api_key)
         elif provider == "groq" and settings.groq_api_key:
-            self.llm = get_llm("groq", api_key=settings.groq_api_key)
+            self.llm = get_llm("groq", settings.groq_api_key)
         elif provider == "openai" and settings.openai_api_key:
-            self.llm = get_llm("openai", api_key=settings.openai_api_key)
+            self.llm = get_llm("openai", settings.openai_api_key)
         else:
             logger.warning(
                 f"No API key found for requested provider {provider}. Falling back to Gemini if available."
             )
-            if settings.vertex_project:
-                self.llm = get_llm(
-                    "gemini",
-                    project=settings.vertex_project,
-                    location=settings.vertex_location,
-                    model=settings.gemini_model,
-                )
+            if settings.gemini_api_key:
+                self.llm = get_llm("gemini", settings.gemini_api_key)
                 self.provider = "gemini"
             elif settings.groq_api_key:
-                self.llm = get_llm("groq", api_key=settings.groq_api_key)
+                self.llm = get_llm("groq", settings.groq_api_key)
                 self.provider = "groq"
             else:
                 raise AgentException("No valid LLM configuration found.")

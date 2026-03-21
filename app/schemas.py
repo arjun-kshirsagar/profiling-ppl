@@ -14,13 +14,9 @@ class EvaluationStatusEnum(str, enum.Enum):
 
 
 class JobInput(BaseModel):
-    input_type: str = Field(
-        ..., pattern="^(linkedin_url|name_company|github_url|email)$"
+    input_data: dict[str, Any] = Field(
+        ..., description="Context variables like linkedin_url or name."
     )
-    input_value: Optional[str] = Field(None)
-    name: Optional[str] = Field(None, min_length=1)
-    company: Optional[str] = Field(None, min_length=1)
-    designation: Optional[str] = Field(None, min_length=1)
     priority: str = Field(default="normal", pattern="^(low|normal|high)$")
 
 
@@ -64,6 +60,16 @@ class PersonaData(BaseModel):
     )
 
 
+class AgentMemoryItem(BaseModel):
+    role: str
+    content: Optional[Any] = None
+    thought: Optional[str] = None
+    action: Optional[str] = None
+    tool: Optional[str] = None
+    inputs: Optional[dict[str, Any]] = None
+    result: Optional[Any] = None
+
+
 class FinalSourceData(BaseModel):
     url: str = Field(..., description="The URL of the source profile or article.")
     type: str = Field(
@@ -94,4 +100,8 @@ class ComprehensiveProfileResponse(BaseModel):
     follow_up_questions: list[str] = Field(
         default_factory=list,
         description="Questions generated when identity confidence is low to help disambiguate.",
+    )
+    agent_memory: list[dict] = Field(
+        default_factory=list,
+        description="The detailed execution trace from the agentic loop.",
     )
